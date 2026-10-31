@@ -11,6 +11,17 @@ const schema = z.object({
     .string()
     .optional()
     .transform((v) => v === "true"),
+  // Comma-separated demo accounts (E.164) that may sign in with OTP 123456 even in production, e.g. for app-store review.
+  DEMO_PHONES: z
+    .string()
+    .optional()
+    .default("")
+    .transform((v) =>
+      v
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean),
+    ),
   ADMIN_EMAIL: z.string().email().default("admin@lasanfamily.in"),
   ADMIN_PASSWORD: z.string().min(6).default("change-me-now"),
 });

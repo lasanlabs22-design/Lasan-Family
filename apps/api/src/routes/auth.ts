@@ -47,7 +47,7 @@ async function phoneLogin(phone: string, role: "customer" | "provider", firebase
 }
 
 /** Tells clients which sign-in methods are available. */
-authRoutes.get("/config", (c) => c.json({ firebase: firebaseEnabled, devMode: env.AUTH_DEV_MODE }));
+authRoutes.get("/config", (c) => c.json({ firebase: firebaseEnabled, devMode: env.AUTH_DEV_MODE, demo: env.DEMO_PHONES.length > 0 }));
 
 authRoutes.post("/firebase", async (c) => {
   const { idToken, role } = parse(firebaseLoginSchema, await c.req.json());
@@ -55,10 +55,12 @@ authRoutes.post("/firebase", async (c) => {
   return c.json(await phoneLogin(phone, role, uid));
 });
 
+/** Fixed-OTP sign-in: any phone in dev mode, or only the configured demo accounts in production. */
 authRoutes.post("/dev", async (c) => {
-  if (!env.AUTH_DEV_MODE) fail(404, "Not found");
+  if (!env.AUTH_DEV_MODE && !env.DEMO_PHONES.length) fail(404, "Not found");
   const { phone, role, code } = parse(devLoginSchema, await c.req.json());
-  if (code !== "123456") fail(401, "Wrong OTP. In dev mode the code is 123456.");
+  if (!env.AUTH_DEV_MODE && !env.DEMO_PHONES.includes(phone)) fail(403, "Use the OTP sent to your phone to sign in.");
+  if (code !== "123456") fail(401, "Wrong OTP. For demo accounts the code is 123456.");
   return c.json(await phoneLogin(phone, role));
 });
 
