@@ -84,6 +84,7 @@ export async function toBookingDTOs(rows: BookingRow[]): Promise<BookingDTO[]> {
       notes: b.notes,
       total: b.total,
       provider: p ? { id: p.id, name: p.name, title: p.title, photo: p.photo } : null,
+      requestedProviderId: b.requestedProviderId,
       createdAt: b.createdAt.toISOString(),
     };
   });
