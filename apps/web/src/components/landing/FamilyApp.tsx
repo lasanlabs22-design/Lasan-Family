@@ -7,7 +7,7 @@ import { Bell, Camera, ClipboardList, MapPin, Shirt, Siren, Sparkles, Utensils }
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import Button from "@/components/ui/Button";
-import { CAREGIVERS, IMG, unsplash } from "@/lib/data";
+import { FACES, IMG, unsplash } from "@/lib/data";
 
 const FEED = [
   { icon: MapPin, time: "8:00 AM", title: "Padma checked in", sub: "Verified at home · on time", tone: "bg-sage-100 text-sage-600" },
@@ -20,15 +20,15 @@ const FEED = [
 
 const FEATURES = [
   { icon: Bell, title: "Live check-ins", text: "Know the moment help arrives and leaves." },
-  { icon: Camera, title: "Meal photos", text: "See what she ate, every single meal." },
+  { icon: Camera, title: "Meal photos", text: "See every meal as it is served." },
   { icon: ClipboardList, title: "Menu & chores", text: "Plan the week's menu and chore list together." },
-  { icon: Siren, title: "One-tap help", text: "Alerts family and her care manager instantly." },
+  { icon: Siren, title: "One-tap help", text: "Alerts family and your coordinator instantly." },
 ];
 
 const STATS = [
-  { value: 1200, suffix: "+", label: "Tirupati families" },
-  { value: 180, suffix: "+", label: "verified maids & cooks" },
-  { value: 4.9, suffix: "★", label: "average rating", decimals: 1 },
+  { value: 6, suffix: "", label: "cities live across AP & Telangana" },
+  { value: 100, suffix: "%", label: "women helpers" },
+  { value: 100, suffix: "%", label: "Aadhaar & police verified" },
   { value: 24, suffix: " hrs", label: "to your first visit", prefix: "<" },
 ];
 
@@ -71,7 +71,7 @@ function Phone() {
   }, [inView]);
 
   const visible = FEED.slice(0, count).reverse().slice(0, 4);
-  const cg = CAREGIVERS.find((c) => c.id === "padma")!;
+  const cg = { name: "Padma", image: FACES[0] };
 
   return (
     <div ref={ref} className="relative mx-auto w-[300px] sm:w-[330px]">
@@ -163,13 +163,13 @@ export default function FamilyApp() {
         <div className="order-1 lg:order-2">
           <SectionHeading
             align="left"
-            eyebrow="The family app"
+            eyebrow="The Lasan Family app"
             title={
               <>
                 Miles away, <em className="text-gradient">never far</em>
               </>
             }
-            text="For the son or daughter in another city. See when the maid arrives, what Amma ate and what got done, all in one gentle timeline of her day."
+            text="For your own home, or your mother&apos;s across the state. See when the helper arrives, what was cooked and what got done, in one calm timeline."
           />
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {FEATURES.map((f, i) => (
@@ -183,7 +183,7 @@ export default function FamilyApp() {
             ))}
           </div>
           <Reveal delay={0.3} className="mt-8">
-            <Button href="/dashboard">Explore the family dashboard</Button>
+            <Button href="/dashboard">Preview the app</Button>
           </Reveal>
         </div>
       </div>

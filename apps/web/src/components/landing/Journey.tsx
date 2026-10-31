@@ -48,13 +48,13 @@ export default function Journey() {
   const intro = (
     <div className="w-[78vw] shrink-0 pr-6 sm:w-[420px]">
       <span className="inline-flex items-center gap-2 rounded-full border border-white/20 px-3.5 py-1 text-xs font-semibold tracking-[0.14em] text-blush-200 uppercase">
-        <span className="size-1.5 rounded-full bg-blush-300" /> A day with Nestly
+        <span className="size-1.5 rounded-full bg-blush-300" /> A day with Lasan Family
       </span>
       <h2 className="mt-5 font-display text-4xl leading-[1.05] font-medium text-white sm:text-5xl">
         Her day, <em className="text-blush-300">gently taken care of</em>
       </h2>
       <p className="mt-5 text-lg text-white/65">
-        From the morning sweep to the last cup of filter coffee, her maid and cook follow her rhythm, not the other way round.
+        From the morning sweep to the last cup of filter coffee, your maid and cook follow your rhythm, not the other way round.
       </p>
     </div>
   );

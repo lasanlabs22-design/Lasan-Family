@@ -6,14 +6,13 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, MapPin, Menu, X } from "lucide-react";
 import clsx from "clsx";
-import { CITY } from "@/lib/data";
 import Logo from "./Logo";
 
 const LINKS = [
   { href: "/services", label: "Services" },
   { href: "/caregivers", label: "Maids & cooks" },
-  { href: "/#plans", label: "Care plans" },
-  { href: "/dashboard", label: "Family app" },
+  { href: "/#plans", label: "Plans" },
+  { href: "/dashboard", label: "The app" },
 ];
 
 export default function Navbar() {
@@ -43,10 +42,10 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           <Logo />
           <Link
-            href="/#tirupati"
-            className="hidden items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1 text-xs font-semibold text-blush-600 ring-1 ring-blush-100 transition-colors hover:bg-blush-100 sm:flex"
+            href="/#cities"
+            className="hidden items-center gap-1 rounded-full bg-blush-50 px-2.5 py-1 text-xs font-semibold text-blush-600 ring-1 ring-blush-100 transition-colors hover:bg-blush-100 xl:flex"
           >
-            <MapPin className="size-3" /> {CITY.name}
+            <MapPin className="size-3" /> AP &amp; Telangana
           </Link>
         </div>
 

@@ -29,13 +29,13 @@ export default function NeedPicker() {
           eyebrow="Two things, done beautifully"
           title={
             <>
-              Housework and cooking, <em className="text-gradient">off her hands</em>
+              Housework and cooking, <em className="text-gradient">off your hands</em>
             </>
           }
-          text="Pick what she needs and we'll match a verified helper who fits her routine, her language and her taste."
+          text="Pick what you need and we'll match a verified helper who fits your routine, your language and your taste."
         />
 
-        <div role="tablist" aria-label="What she needs" className="mx-auto mt-12 flex w-fit flex-wrap justify-center gap-1 rounded-full bg-white p-1.5 shadow-sm ring-1 ring-blush-100">
+        <div role="tablist" aria-label="What you need" className="mx-auto mt-12 flex w-fit flex-wrap justify-center gap-1 rounded-full bg-white p-1.5 shadow-sm ring-1 ring-blush-100">
           {NEEDS.map((s) => (
             <button
               key={s.id}

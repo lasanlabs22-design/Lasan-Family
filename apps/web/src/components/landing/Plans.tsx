@@ -16,7 +16,7 @@ export default function Plans() {
               Simple plans, <em className="text-gradient">no surprises</em>
             </>
           }
-          text="Bundle the care she needs and save up to 25% compared with booking visit by visit. Pause or cancel anytime."
+          text="Bundle the help you need and save up to 25% compared with booking visit by visit. Pause or cancel anytime."
         />
 
         <div className="mt-16 grid items-stretch gap-5 lg:grid-cols-3">

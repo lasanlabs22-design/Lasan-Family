@@ -11,19 +11,24 @@ import Plans from "@/components/landing/Plans";
 import FAQ from "@/components/landing/FAQ";
 import CTA from "@/components/landing/CTA";
 import ServiceArea from "@/components/landing/ServiceArea";
+import { getCities, getProviders } from "@/lib/api";
 
-export default function Home() {
+export default async function Home() {
+  const [cities, providers] = await Promise.all([getCities(), getProviders()]);
+  // One standout helper per city keeps the showcase representative of both states.
+  const featured = providers.filter((p, i, all) => all.findIndex((x) => x.citySlug === p.citySlug) === i).slice(0, 4);
+
   return (
     <>
       <Hero />
       <TrustBar />
       <NeedPicker />
       <ServicesBento />
-      <ServiceArea />
+      <ServiceArea cities={cities} />
       <HowItWorks />
       <Journey />
       <FamilyApp />
-      <CaregiversShowcase />
+      <CaregiversShowcase providers={featured} />
       <Testimonials />
       <Plans />
       <FAQ />

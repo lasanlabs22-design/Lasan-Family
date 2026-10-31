@@ -1,6 +1,6 @@
 import { MapPin } from "lucide-react";
 import Link from "next/link";
-import { CITY } from "@/lib/data";
+import { BRAND, LIVE_CITIES } from "@/lib/data";
 import Logo from "./Logo";
 
 const COLS = [
@@ -14,10 +14,10 @@ const COLS = [
     ],
   },
   {
-    title: "Nestly",
+    title: "Lasan Family",
     links: [
       { label: "Find maids & cooks", href: "/caregivers" },
-      { label: "Family app", href: "/dashboard" },
+      { label: "The app", href: "/dashboard" },
       { label: "Care plans", href: "/#plans" },
       { label: "Work with us", href: "/become-a-caregiver" },
     ],
@@ -56,26 +56,18 @@ export default function Footer() {
         <div className="grid gap-12 lg:grid-cols-[1.4fr_2fr]">
           <div>
             <Logo light />
-            <p className="mt-5 max-w-sm text-white/65">
-              Trusted maids and home cooks for elderly women, so she can rest easy in her own home.
+            <p className="mt-5 max-w-sm text-white/65">Verified women maids and home cooks, for every woman who deserves a little help at home.</p>
+            <p className="mt-4 flex items-start gap-2 text-sm text-blush-200">
+              <MapPin className="mt-0.5 size-4 shrink-0" /> Andhra Pradesh &amp; Telangana · {LIVE_CITIES.map((c) => c.name).join(", ")}
             </p>
-            <p className="mt-4 flex items-center gap-2 text-sm text-blush-200">
-              <MapPin className="size-4" /> Currently serving {CITY.name}, {CITY.state} only
-            </p>
-            <form className="mt-8 flex max-w-sm gap-2 rounded-full bg-white/10 p-1.5 ring-1 ring-white/15 focus-within:ring-blush-300">
-              <label htmlFor="footer-email" className="sr-only">
-                Email
-              </label>
-              <input
-                id="footer-email"
-                type="email"
-                placeholder="Your email for care tips"
-                className="min-w-0 flex-1 bg-transparent px-4 text-sm text-white placeholder:text-white/45 focus:outline-none"
-              />
-              <button type="button" className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-plum-900 hover:bg-blush-100">
-                Subscribe
-              </button>
-            </form>
+            <div className="mt-8 space-y-1 text-sm text-white/70">
+              <a href={BRAND.supportPhoneHref} className="block hover:text-white">
+                {BRAND.supportPhone}
+              </a>
+              <a href={`mailto:${BRAND.supportEmail}`} className="block hover:text-white">
+                {BRAND.supportEmail}
+              </a>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
             {COLS.map((c) => (
@@ -96,11 +88,11 @@ export default function Footer() {
         </div>
 
         <p className="mt-20 font-display text-[18vw] leading-none font-semibold tracking-tighter text-white/[0.06] select-none lg:text-[13rem]">
-          nestly
+          lasan
         </p>
 
         <div className="mt-6 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-8 text-sm text-white/50 sm:flex-row sm:items-center">
-          <p>© 2026 Nestly. Made with love for the women who raised us.</p>
+          <p>© 2026 Lasan Family. Made in Andhra Pradesh &amp; Telangana.</p>
           <div className="flex gap-3">
             {SOCIAL.map((s) => (
               <a

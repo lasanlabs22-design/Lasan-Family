@@ -3,8 +3,8 @@ import clsx from "clsx";
 
 export default function Logo({ light = false }: { light?: boolean }) {
   return (
-    <Link href="/" className="group flex items-center gap-2.5" aria-label="Nestly home">
-      <svg viewBox="0 0 40 40" className="size-9 transition-transform duration-500 group-hover:rotate-[-8deg]">
+    <Link href="/" className="group flex items-center gap-2.5" aria-label="Lasan Family home">
+      <svg viewBox="0 0 40 40" className="size-9 transition-transform duration-500 group-hover:rotate-[-6deg]" aria-hidden>
         <defs>
           <linearGradient id="lg-a" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#f0a3b4" />
@@ -19,8 +19,9 @@ export default function Logo({ light = false }: { light?: boolean }) {
         <path d="M20 35c10-7 16-13.5 16-20.5 0-5.2-4-9-8.8-9-3.1 0-5.7 1.6-7.2 4.1" fill="url(#lg-b)" opacity="0.9" />
         <path d="M13 21.5c2.2 2.6 4.5 3.9 7 3.9s4.8-1.3 7-3.9" stroke="white" strokeWidth="2.4" strokeLinecap="round" fill="none" />
       </svg>
-      <span className={clsx("font-display text-2xl font-semibold tracking-tight", light ? "text-white" : "text-plum-900")}>
-        nestly
+      <span className="flex items-baseline gap-1.5 leading-none">
+        <span className={clsx("font-display text-2xl font-semibold tracking-tight", light ? "text-white" : "text-plum-900")}>Lasan</span>
+        <span className={clsx("text-[0.7rem] font-semibold tracking-[0.22em] uppercase", light ? "text-blush-200" : "text-blush-600")}>Family</span>
       </span>
     </Link>
   );
