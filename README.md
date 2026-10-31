@@ -21,6 +21,7 @@ npm run db:seed -w @lasan/api            # first run only
 npm run dev:api                          # http://localhost:4000
 npm run dev:web                          # http://localhost:3000
 npm run dev:admin                        # http://localhost:3001
+npm run dev:mobile                       # Expo dev server: scan the QR code with Expo Go
 ```
 
 See `docs/HANDOFF.md` for architecture and the API reference, and `docs/STATUS.md` for progress.
@@ -33,3 +34,12 @@ The operations console for the Lasan Family team: overview KPIs and a 30-day cha
 - Sign in with the seeded admin: `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `apps/api/.env`.
 - The session JWT lives in an httpOnly `lasan_admin` cookie (12 hours). `src/proxy.ts` guards every page; data is read on the server per request and changed through Server Actions.
 - Production: Railway service `admin` builds `apps/admin/Dockerfile` from `main` (https://admin-production-c858f.up.railway.app).
+
+## Mobile app (`apps/mobile`)
+
+One Expo (React Native) app with two sign-ins: **customers** follow each visit live (check-in, chores, meal photos), book a maid or home cook and manage bookings; **service providers** see today's homes, check in and out, post updates for the family, and track their schedule and earnings.
+
+- Run: `npm run start -w @lasan/mobile` (or `npm run dev:mobile`) and scan the QR code with **Expo Go**.
+- It uses the production API by default; set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` (see `.env.example`) to point elsewhere.
+- Demo logins, OTP `123456`: customer `90000 00001`, service provider `90000 00101`.
+- Firebase phone sign-in is a pluggable stub until the Firebase project exists. The Monday steps (React Native Firebase, config plugins, EAS development build, `FIREBASE_PROJECT_ID` on the API) are in `apps/mobile/README.md`.
