@@ -9,8 +9,8 @@ Lasan Family is a marketplace for verified **women maids and home cooks** for **
 | `packages/shared` | `@lasan/shared` | Brand, geography, catalog, pricing, Zod schemas, DTO types, typed fetch client | ✅ done |
 | `apps/api` | `@lasan/api` | Hono + Drizzle ORM + PostgreSQL REST API | ✅ done, live |
 | `apps/web` | `@lasan/web` | Public website (Next.js 16, Tailwind v4) | ✅ done, live |
-| `apps/admin` | `@lasan/admin` | Admin console for the ops team (Next.js 16, Tailwind v4) | see `docs/STATUS.md` |
-| `apps/mobile` | `@lasan/mobile` | One Expo app with **two logins: Customer and Service provider** | see `docs/STATUS.md` |
+| `apps/admin` | `@lasan/admin` | Admin console for the ops team (Next.js 16, Tailwind v4) | ✅ done, live |
+| `apps/mobile` | `@lasan/mobile` | One Expo app with **two logins: Customer and Service provider** | ✅ done (Expo Go; store builds pending) |
 
 Install everything from the repo root with `npm install`. Import shared code with `import { ... } from "@lasan/shared"`. Workspace packages are transpiled automatically by Next.js and Metro.
 
@@ -39,7 +39,7 @@ Every service deploys **automatically from `main`** on GitHub. Each builds a Doc
 | --- | --- | --- | --- |
 | api | https://api-production-05746.up.railway.app | `apps/api/Dockerfile` | 4000 |
 | web | https://web-production-d4f12.up.railway.app | `apps/web/Dockerfile` | 3000 |
-| admin | https://admin-production-c858f.up.railway.app | `apps/admin/Dockerfile` (**must exist**, copy the web pattern) | 3001 |
+| admin | https://admin-production-c858f.up.railway.app | `apps/admin/Dockerfile` | 3001 |
 | Postgres | private network | n/a | n/a |
 
 The admin and web services receive `NEXT_PUBLIC_API_URL=https://api-production-05746.up.railway.app` as a Docker build arg (declare `ARG NEXT_PUBLIC_API_URL`). `next start` reads `PORT` from the environment. In production the API allows OTP `123456` only for the `DEMO_PHONES` accounts above; everything else needs Firebase phone auth (configured by the owner on Monday; leave it pluggable).
