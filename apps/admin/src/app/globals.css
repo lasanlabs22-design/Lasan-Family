@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* Design tokens shared with apps/web (see docs/HANDOFF.md §5). */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --color-cream: #fbf6f1;
+  --color-ivory: #fffdfb;
+
+  --color-blush-50: #fdf3f5;
+  --color-blush-100: #fbe5ea;
+  --color-blush-200: #f7cbd5;
+  --color-blush-300: #f0a3b4;
+  --color-blush-400: #e57a93;
+  --color-blush-500: #d45677;
+  --color-blush-600: #b93d5f;
+
+  --color-plum-50: #f6eff6;
+  --color-plum-100: #eadcea;
+  --color-plum-300: #b58cb3;
+  --color-plum-500: #7a4377;
+  --color-plum-700: #4d2649;
+  --color-plum-900: #2a1428;
+
+  --color-peach-100: #fde9dc;
+  --color-peach-300: #f7c3a1;
+  --color-sage-100: #e8efe5;
+  --color-sage-300: #b5c9ae;
+  --color-sage-600: #5f7d57;
+  --color-lilac-100: #eee8fb;
+  --color-lilac-300: #c9b8f0;
+  --color-gold-400: #e7b45f;
+
+  --animate-shimmer: shimmer 2.4s linear infinite;
+  --animate-drawer: drawer 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-fade: fade 0.24s ease-out;
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes drawer {
+    from { transform: translateX(24px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-plum-900);
+}
+
+::selection {
+  background: var(--color-blush-200);
+  color: var(--color-plum-900);
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, var(--color-blush-50), var(--color-ivory), var(--color-blush-50));
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

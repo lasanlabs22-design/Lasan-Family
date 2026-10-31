@@ -215,6 +215,8 @@ export type BookingDTO = {
   notes: string;
   total: number;
   provider: Pick<ProviderDTO, "id" | "name" | "title" | "photo"> | null;
+  /** The helper the customer picked when booking (the admin console prefers her when assigning). */
+  requestedProviderId: string | null;
   createdAt: string;
 };
 
