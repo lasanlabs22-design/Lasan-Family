@@ -31,7 +31,7 @@ export default function ServicesBento() {
                 The people who make home <em className="text-gradient">feel lighter</em>
               </>
             }
-            text="Every maid and cook is hand-picked, trained to work with elders, and backed by our replacement guarantee."
+            text="Every maid and cook is hand-picked, trained for respectful in-home work, and backed by our replacement guarantee."
           />
           <Reveal delay={0.1}>
             <Button href="/services" variant="secondary">

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { BadgeCheck, ShieldCheck, Users } from "lucide-react";
 import PageHero from "@/components/ui/PageHero";
 import CaregiverBrowser from "./CaregiverBrowser";
+import { getCities, getProviders } from "@/lib/api";
 
-export const metadata: Metadata = { title: "Maids & cooks · Nestly" };
+export const metadata: Metadata = { title: "Maids & cooks · Lasan Family" };
 
-export default function CaregiversPage() {
+export default async function CaregiversPage() {
+  const [providers, cities] = await Promise.all([getProviders(), getCities()]);
   return (
     <>
       <PageHero
@@ -29,7 +31,7 @@ export default function CaregiversPage() {
           ))}
         </div>
       </PageHero>
-      <CaregiverBrowser />
+      <CaregiverBrowser providers={providers} cities={cities} />
     </>
   );
 }

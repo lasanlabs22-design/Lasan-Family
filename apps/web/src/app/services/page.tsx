@@ -4,7 +4,7 @@ import PageHero from "@/components/ui/PageHero";
 import CTA from "@/components/landing/CTA";
 import ServicesExplorer from "./ServicesExplorer";
 
-export const metadata: Metadata = { title: "Services · Nestly" };
+export const metadata: Metadata = { title: "Services · Lasan Family" };
 
 export default function ServicesPage() {
   return (
@@ -13,10 +13,10 @@ export default function ServicesPage() {
         eyebrow="Services"
         title={
           <>
-            A spotless home and <em className="text-gradient">meals she loves</em>
+            A spotless home and <em className="text-gradient">meals you love</em>
           </>
         }
-        text="Maids and home cooks across Tirupati, from one trusted team. Book a single visit, daily help, or bundle both into a monthly plan."
+        text="Verified maids and home cooks across Andhra Pradesh and Telangana, from one trusted team. Book a single visit, daily help, or bundle both into a monthly plan."
       />
       <Suspense fallback={<div className="h-[60vh]" />}>
         <ServicesExplorer />

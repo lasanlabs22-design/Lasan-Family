@@ -3,7 +3,7 @@ import { ArrowRight, Phone } from "lucide-react";
 import Aurora from "@/components/graphics/Aurora";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
-import { IMG, unsplash } from "@/lib/data";
+import { BRAND, IMG, unsplash } from "@/lib/data";
 
 export default function CTA() {
   return (
@@ -21,17 +21,17 @@ export default function CTA() {
         </div>
         <div className="relative mx-auto max-w-2xl">
           <h2 className="font-display text-4xl leading-[1.05] font-medium text-white sm:text-6xl">
-            She looked after everyone. <em className="text-blush-300">Now it&apos;s her turn.</em>
+            Help at home, done right. <em className="text-blush-300">Every single day.</em>
           </h2>
           <p className="mx-auto mt-6 max-w-lg text-lg text-white/70">
-            Tell us what she needs and we&apos;ll match a verified maid or cook, often by tomorrow morning.
+            Tell us what you need and we&apos;ll match a verified maid or cook, often by tomorrow morning.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Button href="/book" variant="light" className="px-7 py-4 text-base">
               Book care now <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </Button>
-            <Button href="tel:+918000000000" variant="ghost" className="px-7 py-4 text-base text-white ring-1 ring-white/25 hover:bg-white/10">
-              <Phone className="size-4" /> Talk to a care manager
+            <Button href={BRAND.supportPhoneHref} variant="ghost" className="px-7 py-4 text-base text-white ring-1 ring-white/25 hover:bg-white/10">
+              <Phone className="size-4" /> Talk to a coordinator
             </Button>
           </div>
         </div>

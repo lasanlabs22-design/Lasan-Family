@@ -6,7 +6,11 @@ import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowDownRight, ArrowUpRight, Check, Clock, MapPin, MessageCircle, Minus, Plus, Shirt, Siren, Sparkles, Utensils, Video } from "lucide-react";
 import clsx from "clsx";
-import { CAREGIVERS, IMG, unsplash } from "@/lib/data";
+import { FACES, IMG, unsplash } from "@/lib/data";
+
+// Static preview personas, matching the demo data in the API seed.
+const padma = { id: "padma", name: "Padma R.", role: "Daily maid", image: FACES[0] };
+const lakshmi = { id: "lakshmi", name: "Lakshmi K.", role: "Home cook · Diet-specific meals", image: FACES[1] };
 import { ColumnChart, LineChart, Sparkline, type Point } from "./charts";
 
 // Demo data: 60 deterministic days ending 30 Oct so the "previous period" deltas have a baseline.
@@ -60,8 +64,6 @@ const onTime = (xs: { late: number }[]) => Math.round((xs.filter((d) => d.late <
 export default function FamilyDashboard() {
   const [range, setRange] = useState<(typeof RANGES)[number]>(14);
   const [tableView, setTableView] = useState(false);
-  const padma = CAREGIVERS.find((c) => c.id === "padma")!;
-  const lakshmi = CAREGIVERS.find((c) => c.id === "lakshmi")!;
 
   const s = useMemo(() => {
     const cur = DAYS.slice(-range);

@@ -5,9 +5,10 @@ import PageHero from "@/components/ui/PageHero";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ApplyForm from "./ApplyForm";
-import { CAREGIVERS, unsplash } from "@/lib/data";
+import { getCities } from "@/lib/api";
+import { FACES, unsplash } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Work with us · Nestly" };
+export const metadata: Metadata = { title: "Work with us · Lasan Family" };
 
 const PERKS = [
   { icon: Wallet, title: "Earn up to ₹25,000/mo", text: "Fair, transparent pay, sent to your bank every week." },
@@ -18,7 +19,8 @@ const PERKS = [
 
 const STEPS = ["Apply online in 5 minutes", "Phone chat & document check", "Skills session at our centre", "Start receiving bookings"];
 
-export default function BecomeCaregiverPage() {
+export default async function BecomeCaregiverPage() {
+  const cities = await getCities();
   return (
     <>
       <PageHero
@@ -28,12 +30,12 @@ export default function BecomeCaregiverPage() {
             Your kindness is a <em className="text-gradient">profession</em> here
           </>
         }
-        text="Join 180+ maids and cooks in Tirupati who have found steady, respected work, with free training, fair pay and families who value them."
+        text="Join verified maids and cooks across Andhra Pradesh and Telangana who have found steady, respected work, with free training, fair pay and families who value them."
       >
         <div className="mt-10 flex justify-center -space-x-4">
-          {CAREGIVERS.map((c, i) => (
-            <Reveal key={c.id} delay={i * 0.05} y={12}>
-              <Image src={unsplash(c.image, 120, 120)} alt="" width={60} height={60} className="size-11 rounded-full object-cover ring-4 ring-cream sm:size-15" />
+          {FACES.map((id, i) => (
+            <Reveal key={id} delay={i * 0.05} y={12}>
+              <Image src={unsplash(id, 120, 120)} alt="" width={60} height={60} className="size-11 rounded-full object-cover ring-4 ring-cream sm:size-15" />
             </Reveal>
           ))}
         </div>
@@ -77,11 +79,11 @@ export default function BecomeCaregiverPage() {
             </ol>
             <Reveal delay={0.3} className="mt-6 flex items-start gap-3 rounded-3xl bg-sage-100 p-5 text-sm text-plum-700">
               <HeartHandshake className="size-5 shrink-0 text-sage-600" />
-              No fees, ever. Nestly never charges helpers to join, train or get bookings.
+              No fees, ever. Lasan Family never charges helpers to join, train or get bookings.
             </Reveal>
           </div>
           <Reveal delay={0.1}>
-            <ApplyForm />
+            <ApplyForm cities={cities} />
           </Reveal>
         </div>
       </section>

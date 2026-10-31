@@ -10,7 +10,7 @@ const STEPS = [
   {
     icon: MessageCircleHeart,
     title: "Tell us about her",
-    text: "Her routine, diet, language and the chores she needs help with. Two minutes, or one call with a care manager.",
+    text: "Your routine, diet, language and the chores you need help with. Two minutes, or one call with a coordinator.",
   },
   {
     icon: UserRoundSearch,

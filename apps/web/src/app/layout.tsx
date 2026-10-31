@@ -17,9 +17,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Nestly: Trusted maids & home cooks for elderly women in Tirupati",
+  title: { default: "Lasan Family: Trusted maids & home cooks in Andhra Pradesh and Telangana", template: "%s" },
   description:
-    "Verified, Telugu-speaking women maids and home cooks for elderly women in Tirupati: daily cleaning, laundry and fresh Andhra-style home-cooked meals made to her taste and diet.",
+    "Verified women maids and home cooks for women at home across Hyderabad, Warangal, Tirupati, Vijayawada, Visakhapatnam and Guntur. Daily cleaning, laundry and fresh home-cooked meals made to your taste and diet.",
 };
 
 export const viewport: Viewport = {

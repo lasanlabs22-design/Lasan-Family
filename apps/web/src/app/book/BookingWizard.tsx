@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, ChefHat, HeartHandshake, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChefHat, HeartHandshake, Loader2, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import clsx from "clsx";
-import { AREAS, CAREGIVERS, CITY, PLANS, SERVICES, formatINR, unsplash, type Need } from "@/lib/data";
+import { ApiRequestError, type BookingDTO } from "@lasan/shared";
+import { api } from "@/lib/client";
+import { DIETS, FOOD, FOR_WHOM, FREQUENCIES, PLANS, SERVICES, SLOTS, formatINR, quote, unsplash, type CityDTO, type Need, type ProviderDTO } from "@/lib/data";
 
 const NEED_OPTIONS: { id: Need; title: string; text: string; icon: typeof Sparkles }[] = [
   { id: "maid", title: "Home help", text: "Cleaning, laundry, dishes", icon: Sparkles },
@@ -15,37 +17,25 @@ const NEED_OPTIONS: { id: Need; title: string; text: string; icon: typeof Sparkl
   { id: "both", title: "Both", text: "Maid + cook together", icon: HeartHandshake },
 ];
 
-const FOR_WHOM = ["My mother", "Myself", "Grandmother", "Another relative"];
-const FOOD = ["Vegetarian", "Eggetarian", "Non-vegetarian"];
-const DIETS = ["Diabetic-friendly", "Low salt", "Low oil", "Soft food", "Jain", "No onion-garlic"];
-
-const FREQ = [
-  { id: "once", label: "One visit", mult: 1, note: "Try us out" },
-  { id: "week", label: "Daily for a week", mult: 7, note: "Save 5%", discount: 0.05 },
-  { id: "month", label: "Monthly", mult: 26, note: "Save 15%", discount: 0.15 },
-] as const;
-
-const SLOTS = ["Morning · 7–11", "Midday · 11–2", "Evening · 5–8", "Full day · 8–8"];
 const STEPS = ["Needs", "Schedule", "Details", "Review"];
-
-const PLAN_NEED = { tidy: "maid", nourish: "cook", complete: "both" } as const;
+type FreqId = (typeof FREQUENCIES)[number]["id"];
 
 const noopSubscribe = () => () => {};
+const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const longDate = (d?: Date) => d?.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }) ?? "-";
 
-export default function BookingWizard() {
+export default function BookingWizard({ cities, providers }: { cities: CityDTO[]; providers: ProviderDTO[] }) {
   const params = useSearchParams();
   const preService = params.get("service");
-  const prePlan = params.get("plan") as keyof typeof PLAN_NEED | null;
-  const caregiver = CAREGIVERS.find((c) => c.id === params.get("caregiver"));
-  const plan = PLANS.find((p) => p.id === prePlan);
+  const plan = PLANS.find((p) => p.id === params.get("plan"));
+  const caregiver = providers.find((c) => c.id === params.get("caregiver"));
+  const liveCities = cities.filter((c) => c.status === "live");
 
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
-  const [need, setNeed] = useState<Need>(
-    plan ? PLAN_NEED[plan.id as keyof typeof PLAN_NEED] : (SERVICES.find((s) => s.id === preService)?.category ?? "maid"),
-  );
-  const [picked, setPicked] = useState<string[]>(preService ? [preService] : []);
-  const [freq, setFreq] = useState<(typeof FREQ)[number]["id"]>("once");
+  const [need, setNeed] = useState<Need>(plan ? plan.need : (SERVICES.find((s) => s.id === preService)?.category ?? "maid"));
+  const [picked, setPicked] = useState<string[]>(preService && SERVICES.some((s) => s.id === preService) ? [preService] : []);
+  const [freq, setFreq] = useState<FreqId>("once");
   // Today's date is read on the client only (server snapshot is empty) so server and client markup never disagree.
   const today = useSyncExternalStore(noopSubscribe, () => new Date().toDateString(), () => "");
   const dates = useMemo(() => {
@@ -54,24 +44,39 @@ export default function BookingWizard() {
     return Array.from({ length: 14 }, (_, i) => new Date(t.getFullYear(), t.getMonth(), t.getDate() + i + 1));
   }, [today]);
   const [date, setDate] = useState(0);
-  const [slot, setSlot] = useState(SLOTS[0]);
-  const [form, setForm] = useState({ name: "", phone: "", area: AREAS.includes(params.get("area") ?? "") ? params.get("area")! : "", address: "", notes: "", forWhom: FOR_WHOM[0], food: FOOD[0], diets: [] as string[] });
-  const [done, setDone] = useState(false);
+  const [slot, setSlot] = useState<(typeof SLOTS)[number]>(SLOTS[0]);
 
+  const initialCity = liveCities.find((c) => c.slug === (params.get("city") ?? caregiver?.citySlug))?.slug ?? "";
+  const initialLocality = liveCities.find((c) => c.slug === initialCity)?.localities.includes(params.get("locality") ?? "") ? params.get("locality")! : "";
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    citySlug: initialCity,
+    locality: initialLocality,
+    address: "",
+    notes: "",
+    forWhom: FOR_WHOM[0] as (typeof FOR_WHOM)[number],
+    food: FOOD[0] as (typeof FOOD)[number],
+    diets: [] as (typeof DIETS)[number][],
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [booking, setBooking] = useState<BookingDTO | null>(null);
+
+  const city = liveCities.find((c) => c.slug === form.citySlug);
   const options = need === "both" ? SERVICES : SERVICES.filter((s) => s.category === need);
   const chosen = SERVICES.filter((s) => picked.includes(s.id));
   const wantsCooking = plan ? need !== "maid" : chosen.some((s) => s.category === "cook");
-  const f = FREQ.find((x) => x.id === freq)!;
+  const f = FREQUENCIES.find((x) => x.id === freq)!;
+  const total = quote({ services: chosen, frequency: freq, plan: plan ? { slug: plan.slug, price: plan.price } : null });
+  const self = form.forWhom === "Myself";
 
-  const total = useMemo(() => {
-    if (plan) return plan.price;
-    // Only per-visit / per-day services repeat with frequency; monthly and one-off jobs are charged once.
-    const recurring = chosen.filter((s) => s.unit === "visit" || s.unit === "day").reduce((sum, s) => sum + s.price, 0);
-    const once = chosen.filter((s) => s.unit !== "visit" && s.unit !== "day").reduce((sum, s) => sum + s.price, 0);
-    return Math.round(recurring * f.mult * (1 - ("discount" in f ? f.discount : 0)) + once);
-  }, [chosen, f, plan]);
-
-  const canNext = [plan ? true : picked.length > 0, dates.length > 0, form.name.trim() && form.phone.trim().length >= 8 && form.area && form.address.trim(), true][step];
+  const canNext = [
+    plan ? true : picked.length > 0,
+    dates.length > 0,
+    form.name.trim().length > 1 && form.phone.replace(/\D/g, "").length >= 10 && form.locality && form.address.trim().length > 2,
+    !submitting,
+  ][step];
 
   const go = (d: number) => {
     setDir(d);
@@ -79,12 +84,38 @@ export default function BookingWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const confirm = () => {
-    setDone(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const confirm = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      const created = await api.post<BookingDTO>("/bookings", {
+        need,
+        serviceSlugs: plan ? [] : picked,
+        planSlug: plan?.slug ?? null,
+        frequency: freq,
+        startDate: isoDate(dates[date]),
+        slot,
+        citySlug: form.citySlug,
+        locality: form.locality,
+        address: form.address,
+        forWhom: form.forWhom,
+        recipientName: form.name,
+        phone: form.phone,
+        food: wantsCooking ? form.food : null,
+        diets: wantsCooking ? form.diets : [],
+        notes: form.notes,
+        providerId: caregiver?.id ?? null,
+      });
+      setBooking(created);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : "We couldn't reach Lasan Family. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (done) return <Success name={form.name} date={dates[date]} slot={slot} />;
+  if (booking) return <Success booking={booking} date={dates[date]} />;
 
   return (
     <div className="mx-auto grid max-w-6xl gap-6 px-4 pb-24 sm:px-6 lg:grid-cols-[1fr_360px]">
@@ -116,14 +147,14 @@ export default function BookingWizard() {
             <motion.div
               key={step}
               custom={dir}
-              initial={{ opacity: 0, x: dir * 40 }}
+              initial={{ opacity: 0, x: dir * 24 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: dir * -40 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0, x: dir * -24 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             >
               {step === 0 && (
                 <div>
-                  <h2 className="font-display text-3xl font-medium text-plum-900">What does she need?</h2>
+                  <h2 className="font-display text-3xl font-medium text-plum-900">What do you need help with?</h2>
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     {NEED_OPTIONS.map((w) => (
                       <button
@@ -156,7 +187,7 @@ export default function BookingWizard() {
                   ) : (
                     <>
                       <h3 className="mt-10 font-semibold text-plum-900">
-                        What would help? <span className="font-normal text-plum-700/60">Pick one or more</span>
+                        Choose services <span className="font-normal text-plum-700/60">Pick one or more</span>
                       </h3>
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         {options.map((s) => {
@@ -197,7 +228,7 @@ export default function BookingWizard() {
                   <h2 className="font-display text-3xl font-medium text-plum-900">When should we start?</h2>
                   {!plan && (
                     <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                      {FREQ.map((x) => (
+                      {FREQUENCIES.map((x) => (
                         <button
                           key={x.id}
                           onClick={() => setFreq(x.id)}
@@ -222,16 +253,14 @@ export default function BookingWizard() {
                         aria-pressed={date === i}
                         className={clsx(
                           "flex w-16 shrink-0 flex-col items-center rounded-2xl py-3 ring-1 transition-all",
-                          date === i ? "bg-blush-500 text-white ring-blush-500" : "ring-blush-100 hover:ring-blush-300",
+                          date === i ? "bg-plum-900 text-white ring-plum-900" : "ring-blush-100 hover:ring-blush-300",
                         )}
                       >
-                        <span className={clsx("text-[11px] uppercase", date === i ? "text-white/80" : "text-plum-700/50")}>
+                        <span className={clsx("text-[11px] uppercase", date === i ? "text-white/70" : "text-plum-700/50")}>
                           {d.toLocaleDateString("en-IN", { weekday: "short" })}
                         </span>
                         <span className="font-display text-2xl">{d.getDate()}</span>
-                        <span className={clsx("text-[11px]", date === i ? "text-white/80" : "text-plum-700/50")}>
-                          {d.toLocaleDateString("en-IN", { month: "short" })}
-                        </span>
+                        <span className={clsx("text-[11px]", date === i ? "text-white/70" : "text-plum-700/50")}>{d.toLocaleDateString("en-IN", { month: "short" })}</span>
                       </button>
                     ))}
                   </div>
@@ -256,34 +285,46 @@ export default function BookingWizard() {
 
               {step === 2 && (
                 <div>
-                  <h2 className="font-display text-3xl font-medium text-plum-900">A little about her</h2>
-                  <p className="mt-2 text-sm text-plum-700/60">Shared only with your care manager and the maid or cook you choose.</p>
+                  <h2 className="font-display text-3xl font-medium text-plum-900">A few details</h2>
+                  <p className="mt-2 text-sm text-plum-700/60">Shared only with your Lasan Family coordinator and the helper assigned to you.</p>
                   <p className="mt-6 text-sm font-semibold text-plum-900">Who is this for?</p>
                   <Chips options={FOR_WHOM} selected={[form.forWhom]} onToggle={(v) => setForm({ ...form, forWhom: v })} />
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <Field label="Her name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="e.g. Saroja Devi" />
-                    <Field label="Phone number" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="+91 98xxxxxx10" type="tel" />
-                    <label>
-                      <span className="text-sm font-semibold text-plum-900">Locality in {CITY.name}</span>
-                      <select
-                        value={form.area}
-                        onChange={(e) => setForm({ ...form, area: e.target.value })}
-                        className="mt-2 w-full rounded-2xl bg-cream px-4 py-3 text-sm text-plum-900 ring-1 ring-blush-100 focus:ring-2 focus:ring-blush-300 focus:outline-none"
-                      >
-                        <option value="">Choose her locality</option>
-                        {AREAS.map((a) => (
-                          <option key={a}>{a}</option>
-                        ))}
-                      </select>
-                    </label>
+                    <Field label={self ? "Your name" : "Her name"} value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="e.g. Saroja Devi" />
+                    <Field
+                      label={self ? "Your mobile number" : "Contact number"}
+                      value={form.phone}
+                      onChange={(v) => setForm({ ...form, phone: v })}
+                      placeholder="10-digit mobile number"
+                      type="tel"
+                    />
+                    <SelectField
+                      label="City"
+                      value={form.citySlug}
+                      onChange={(v) => setForm({ ...form, citySlug: v, locality: "" })}
+                      placeholder="Choose a city"
+                      options={liveCities.map((c) => ({ value: c.slug, label: `${c.name}, ${c.stateName}` }))}
+                    />
+                    <SelectField
+                      label="Locality"
+                      value={form.locality}
+                      onChange={(v) => setForm({ ...form, locality: v })}
+                      placeholder={city ? "Choose a locality" : "Choose a city first"}
+                      options={(city?.localities ?? []).map((l) => ({ value: l, label: l }))}
+                      disabled={!city}
+                    />
                     <Field
                       label="House no. & street"
                       value={form.address}
                       onChange={(v) => setForm({ ...form, address: v })}
-                      placeholder="e.g. 12-3-45, 4th Cross"
+                      placeholder="e.g. Flat 402, Aparna Towers, 4th Cross"
+                      className="sm:col-span-2"
                     />
                     <p className="-mt-2 flex items-center gap-1.5 text-xs text-plum-700/60 sm:col-span-2">
-                      <MapPin className="size-3.5 text-blush-500" /> We currently serve {CITY.name} only. More cities coming soon.
+                      <MapPin className="size-3.5 text-blush-500" /> Not in a listed locality?{" "}
+                      <Link href="/#cities" className="font-semibold text-plum-900 underline-offset-2 hover:underline">
+                        Join the waitlist
+                      </Link>
                     </p>
                     <label className="sm:col-span-2">
                       <span className="text-sm font-semibold text-plum-900">Anything we should know?</span>
@@ -291,7 +332,7 @@ export default function BookingWizard() {
                         value={form.notes}
                         onChange={(e) => setForm({ ...form, notes: e.target.value })}
                         rows={3}
-                        placeholder="Her routine, preferred language, keys, pets…"
+                        placeholder="Routine, preferred language, keys, pets…"
                         className="mt-2 w-full rounded-2xl bg-cream px-4 py-3 text-sm text-plum-900 ring-1 ring-blush-100 placeholder:text-plum-700/40 focus:ring-2 focus:ring-blush-300 focus:outline-none"
                       />
                     </label>
@@ -315,16 +356,17 @@ export default function BookingWizard() {
 
               {step === 3 && (
                 <div>
-                  <h2 className="font-display text-3xl font-medium text-plum-900">Looks lovely. Ready?</h2>
+                  <h2 className="font-display text-3xl font-medium text-plum-900">Review and confirm</h2>
                   <dl className="mt-6 divide-y divide-blush-100 rounded-3xl bg-cream px-5 ring-1 ring-blush-100">
                     {[
                       ["Needs", NEED_OPTIONS.find((w) => w.id === need)!.title],
                       ["Services", plan ? `${plan.name} plan` : chosen.map((s) => s.name).join(", ")],
-                      ["Frequency", plan ? plan.period : f.label],
-                      ["Starts", dates[date]?.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }) ?? "-"],
+                      ["Frequency", plan ? "Monthly" : f.label],
+                      ["Starts", longDate(dates[date])],
                       ["Time", slot],
                       ["For", `${form.name} (${form.forWhom.toLowerCase()})`],
-                      ["Address", `${form.address}, ${form.area}, ${CITY.name}`],
+                      ["Address", `${form.address}, ${form.locality}, ${city?.name ?? ""}`],
+                      ...(caregiver ? [["Requested helper", caregiver.name]] : []),
                       ...(wantsCooking ? [["Food", [form.food, ...form.diets].join(", ")]] : []),
                     ].map(([k, v]) => (
                       <div key={k} className="flex justify-between gap-6 py-3.5 text-sm">
@@ -336,6 +378,7 @@ export default function BookingWizard() {
                   <p className="mt-4 flex items-center gap-2 text-xs text-plum-700/60">
                     <ShieldCheck className="size-4 text-sage-600" /> You won&apos;t be charged until after the first visit is complete.
                   </p>
+                  {error && <p className="mt-4 rounded-2xl bg-blush-50 px-4 py-3 text-sm font-medium text-blush-600 ring-1 ring-blush-100">{error}</p>}
                 </div>
               )}
             </motion.div>
@@ -345,7 +388,7 @@ export default function BookingWizard() {
         <div className="mt-8 flex items-center justify-between border-t border-blush-100 pt-6">
           <button
             onClick={() => go(-1)}
-            disabled={step === 0}
+            disabled={step === 0 || submitting}
             className="flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-plum-700 transition-opacity hover:bg-blush-50 disabled:opacity-0"
           >
             <ArrowLeft className="size-4" /> Back
@@ -355,8 +398,9 @@ export default function BookingWizard() {
             disabled={!canNext}
             className="group flex items-center gap-2 rounded-full bg-plum-900 px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-blush-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-plum-900"
           >
-            {step === STEPS.length - 1 ? "Confirm booking" : "Continue"}
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
+            {step === STEPS.length - 1 ? (submitting ? "Confirming…" : "Confirm booking") : "Continue"}
+            {!submitting && <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />}
           </button>
         </div>
       </div>
@@ -364,12 +408,10 @@ export default function BookingWizard() {
       {/* Summary */}
       <aside className="h-fit space-y-4 lg:sticky lg:top-28">
         <div className="relative overflow-hidden rounded-[2rem] bg-plum-900 p-6 text-white">
-          <div className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full bg-blush-500/40 blur-3xl" />
+          <div className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full bg-blush-500/30 blur-3xl" />
           <p className="relative text-xs font-semibold tracking-widest text-blush-200 uppercase">Estimated total</p>
-          <motion.p key={total} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative mt-2 font-display text-5xl">
-            {formatINR(total)}
-          </motion.p>
-          <p className="relative mt-1 text-sm text-white/60">{plan ? `per ${plan.period}` : f.mult === 1 ? "for one visit" : `${f.label.toLowerCase()}`}</p>
+          <p className="relative mt-2 font-display text-5xl">{formatINR(total)}</p>
+          <p className="relative mt-1 text-sm text-white/60">{plan ? "per month" : f.mult === 1 ? "for one visit" : f.label.toLowerCase()}</p>
           <ul className="relative mt-5 space-y-2 border-t border-white/10 pt-5 text-sm">
             {plan ? (
               plan.features.map((x) => (
@@ -394,28 +436,28 @@ export default function BookingWizard() {
         </div>
         {caregiver && (
           <div className="flex items-center gap-3 rounded-[1.5rem] bg-white p-4 ring-1 ring-blush-100">
-            <Image src={unsplash(caregiver.image, 120, 120)} alt="" width={52} height={52} className="size-13 rounded-2xl object-cover" />
+            <Image src={unsplash(caregiver.photo, 120, 120)} alt="" width={52} height={52} className="size-13 rounded-2xl object-cover" />
             <div>
               <p className="text-xs text-plum-700/60">Requested helper</p>
               <p className="font-semibold text-plum-900">{caregiver.name}</p>
               <p className="text-xs text-plum-700/60">
-                {caregiver.role} · ★ {caregiver.rating}
+                {caregiver.title} · {caregiver.cityName} · ★ {caregiver.rating}
               </p>
             </div>
           </div>
         )}
         <div className="rounded-[1.5rem] bg-sage-100 p-5 text-sm text-plum-700">
           <p className="flex items-center gap-2 font-semibold text-plum-900">
-            <ShieldCheck className="size-4 text-sage-600" /> The Nestly promise
+            <ShieldCheck className="size-4 text-sage-600" /> The Lasan Family promise
           </p>
-          <p className="mt-1.5">Replacement within 24 hours if it isn&apos;t a perfect fit. Pause or cancel anytime.</p>
+          <p className="mt-1.5">A replacement within 24 hours if it isn&apos;t the right fit. Pause or cancel anytime.</p>
         </div>
       </aside>
     </div>
   );
 }
 
-function Chips({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (v: string) => void }) {
+function Chips<T extends string>({ options, selected, onToggle }: { options: readonly T[]; selected: T[]; onToggle: (v: T) => void }) {
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       {options.map((o) => {
@@ -440,6 +482,9 @@ function Chips({ options, selected, onToggle }: { options: string[]; selected: s
   );
 }
 
+const fieldClass =
+  "mt-2 w-full rounded-2xl bg-cream px-4 py-3 text-sm text-plum-900 ring-1 ring-blush-100 placeholder:text-plum-700/40 focus:ring-2 focus:ring-blush-300 focus:outline-none disabled:opacity-50";
+
 function Field({
   label,
   value,
@@ -458,60 +503,76 @@ function Field({
   return (
     <label className={className}>
       <span className="text-sm font-semibold text-plum-900">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl bg-cream px-4 py-3 text-sm text-plum-900 ring-1 ring-blush-100 placeholder:text-plum-700/40 focus:ring-2 focus:ring-blush-300 focus:outline-none"
-      />
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={fieldClass} />
     </label>
   );
 }
 
-const CONFETTI = Array.from({ length: 28 }, (_, i) => {
-  const angle = (i / 28) * Math.PI * 2;
-  const dist = 120 + (i % 5) * 28;
-  return { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, color: ["#e57a93", "#c9b8f0", "#f7c3a1", "#b5c9ae", "#e7b45f"][i % 5], r: (i * 47) % 360 };
-});
+function SelectField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  options,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+}) {
+  return (
+    <label>
+      <span className="text-sm font-semibold text-plum-900">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className={fieldClass}>
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
-function Success({ name, date, slot }: { name: string; date?: Date; slot: string }) {
+function Success({ booking, date }: { booking: BookingDTO; date?: Date }) {
   return (
     <div className="mx-auto max-w-xl px-6 pb-24 text-center">
-      <div className="relative mx-auto grid size-32 place-items-center">
-        {CONFETTI.map((c, i) => (
-          <motion.span
-            key={i}
-            className="absolute size-2.5 rounded-sm"
-            style={{ background: c.color }}
-            initial={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 0 }}
-            animate={{ x: c.x, y: c.y, opacity: 0, rotate: c.r, scale: 1 }}
-            transition={{ duration: 1.4, ease: "easeOut", delay: 0.25 }}
-          />
-        ))}
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 15 }}
-          className="grid size-28 place-items-center rounded-full bg-gradient-to-br from-blush-400 to-plum-500 shadow-[0_20px_50px_-15px_rgb(212_86_119/0.7)]"
-        >
-          <svg viewBox="0 0 24 24" className="size-12" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-            <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.35, duration: 0.5 }} />
-          </svg>
-        </motion.span>
-      </div>
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-        <h2 className="mt-8 font-display text-4xl font-medium text-plum-900">You&apos;re all set{name ? `, ${name.split(" ")[0]}` : ""}!</h2>
+      <motion.span
+        initial={{ scale: 0.85, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="mx-auto grid size-24 place-items-center rounded-full bg-plum-900 shadow-[0_20px_50px_-20px_rgb(77_38_73/0.7)]"
+      >
+        <svg viewBox="0 0 24 24" className="size-10" fill="none" stroke="white" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+          <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.25, duration: 0.45 }} />
+        </svg>
+      </motion.span>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <p className="mt-8 text-xs font-semibold tracking-[0.16em] text-blush-600 uppercase">Booking {booking.code}</p>
+        <h2 className="mt-2 font-display text-4xl font-medium text-plum-900">Request received</h2>
         <p className="mt-3 text-plum-700/75">
-          Your care manager will call within 15 minutes to introduce your matched helpers for{" "}
+          Your coordinator will call <span className="font-semibold text-plum-900">{booking.phone.replace("+91", "+91 ")}</span> shortly to confirm the helper for{" "}
           <span className="font-semibold text-plum-900">
-            {date?.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}, {slot.split(" · ")[0].toLowerCase()}
+            {longDate(date)}, {booking.slot.split(" · ")[0].toLowerCase()}
           </span>
           .
         </p>
+        <div className="mx-auto mt-8 max-w-sm rounded-3xl bg-white p-5 text-left ring-1 ring-blush-100">
+          <div className="flex justify-between text-sm">
+            <span className="text-plum-700/60">Estimated total</span>
+            <span className="font-semibold text-plum-900">{formatINR(booking.total)}</span>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-plum-700/60">
+            Sign in to the Lasan Family app with this phone number to follow every visit: check-ins, meal photos and notes.
+          </p>
+        </div>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/dashboard" className="rounded-full bg-plum-900 px-6 py-3.5 text-sm font-semibold text-white hover:bg-blush-600">
-            Open family dashboard
+            See the app
           </Link>
           <Link href="/" className="rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-plum-900 ring-1 ring-blush-100 hover:bg-blush-50">
             Back to home
